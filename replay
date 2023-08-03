@@ -1,0 +1,5 @@
+#!/bin/sh
+
+npx tsc
+
+npx node dist/replay.js $@
