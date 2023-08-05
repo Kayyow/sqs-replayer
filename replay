@@ -2,4 +2,4 @@
 
 npx tsc
 
-npx node dist/replay.js $@
+node dist/replay.js $@

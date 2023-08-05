@@ -15,7 +15,18 @@ export const replaySqsMessages = async (
 ) => {
   const client = new SQSClient({ region });
 
-  let messages: Message[] = [];
+  let currentMessages: Message[] = [];
+  let replayPromises: Promise<any>[] = [];
+  let replayedMessageCount = 0;
+
+  process.on("SIGINT", async () => {
+    await Promise.all(replayPromises);
+    process.exit(0);
+  });
+
+  process.on("exit", () => {
+    console.log(`\nReplayed ${replayedMessageCount} messages successfully!`);
+  });
 
   const receiveMessageCommand = new ReceiveMessageCommand({
     QueueUrl: from,
@@ -24,14 +35,15 @@ export const replaySqsMessages = async (
     MessageAttributeNames: ["All"],
   });
 
-  let messageCount = 0;
-
   do {
     const data = await client.send(receiveMessageCommand);
-    messages = data.Messages ?? [];
+    currentMessages = data.Messages ?? [];
 
-    const promises = data.Messages?.map(async (message) => {
-      console.log("Sending message: ", message.Body);
+    replayPromises = currentMessages.map(async (message) => {
+      console.log(
+        `Sending message -> [${message.ReceiptHandle}]`,
+        message.Body
+      );
 
       const sendMessageCommand = new SendMessageCommand({
         QueueUrl: to,
@@ -54,14 +66,14 @@ export const replaySqsMessages = async (
           ReceiptHandle: message.ReceiptHandle,
         });
 
-        const deleteResult = await client.send(deleteMessageCommand);
+        await client.send(deleteMessageCommand);
       }
 
-      messageCount++;
+      console.log(`[${message.ReceiptHandle}] -> Message sent`);
     });
 
-    if (promises) await Promise.all(promises);
-  } while (messages.length > 0);
+    await Promise.all(replayPromises);
 
-  console.log(`Replayed ${messageCount} messages successfully!`);
+    replayedMessageCount += replayPromises.length;
+  } while (currentMessages.length > 0);
 };
