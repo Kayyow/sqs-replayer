@@ -12,5 +12,5 @@ Install dependencies using `npm i` and then run the replay script :
 ## Options
 
 - `--region` - The region in which the queues exists.
-- `--is-fifo` - Is the queue a FIFO queue.
-- `--should-delete` - Should messages be deleted from the original queue. (enabled by default)
+- `--fifo` - Is the queue a FIFO queue.
+- `--delete` - Should messages be deleted from the original queue. (enabled by default)
